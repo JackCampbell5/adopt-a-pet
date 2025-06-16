@@ -1,14 +1,17 @@
 const express = require('express');
 const app = express();
+app.use(express.json())
 const port = 3000;
+
+const petRoutes = require('./routes/petRoutes')
+
 
 app.get('/', (req, res) => {
     res.send('Hello World!');
 });
 
-app.get('/sample-path', (req, res) => {
-    res.send('This is a sample response.')
-})
+app.use('/pet', petRoutes)
+
 
 app.listen(port, () => {
     console.log(`Server Started at http://localhost:${port}`);
