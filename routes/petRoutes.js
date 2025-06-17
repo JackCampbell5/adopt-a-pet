@@ -48,8 +48,33 @@ let pets = [
   ];
 
 router.get('/', async(req, res) => {
-    const pets = await prisma.Pet.findMany()
-    res.json(pets)
+    const { breed, age_min, age_max } = req.query
+
+    const filters = {}
+
+    if (breed) {
+      filters.breed = breed
+    }
+
+    if (age_min || age_max) {
+      filters.publication_year = {}
+      if (year_min) {
+        filters.age.gte = parseInt(age_min)
+      }
+      if (year_max) {
+        filters.age.lte = parseInt(age_max)
+      }
+    }
+
+    try {
+      const pets = await prisma.Pet.findMany({
+        where: filters
+      })
+      res.json(pets)
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({ error: 'Server Error' })
+    }
 })
 
 
@@ -118,5 +143,6 @@ router.post('/add', async(req, res) => {
         res.status(404).send('Contact not found')
     }
   })
+
 
   module.exports = router
