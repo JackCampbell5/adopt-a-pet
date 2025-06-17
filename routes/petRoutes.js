@@ -1,3 +1,6 @@
+const { PrismaClient } = require('../generated/prisma')
+const prisma = new PrismaClient()
+
 const express = require('express')
 const router = express.Router()
 
@@ -44,17 +47,20 @@ let pets = [
     }
   ];
 
-router.get('/', (req, res) => {
+router.get('/', async(req, res) => {
+    const pets = await prisma.Pet.findMany()
     res.json(pets)
- })
+})
 
 
- router.get('/:petId', (req, res) => {
-    const petId = parseInt(req.params.petId)
-    const pet = pets.find(pet => pet.id === petId)
+ router.get('/:petId', async(req, res) => {
+    const { petId } = req.params
+    const existingPet = await prisma.Pet.findUnique({
+        where: { id: parseInt(petId) },
+      });
 
-    if (pet) {
-      res.json(pet)
+    if (existingPet) {
+      res.json(existingPet)
     } else {
       res.status(404).send('Book not found')
     }
@@ -62,44 +68,54 @@ router.get('/', (req, res) => {
 
 
 
-router.post('/add', (req, res) => {
+router.post('/add', async(req, res) => {
     const {name, type, breed, age, description} = req.body
     const newPet = {
-        id: pets.length + 1,
         name: name,
         type: type,
         breed: breed,
         age: age,
         description: description,
     }
+    console.log(newPet)
+    const newPetPris = await prisma.Pet.create({
+        data: newPet
+      })
 
-    pets.push(newPet)
-    res.status(201).json(newPet)
+    res.status(201).json(newPetPris)
   })
 
-  router.put('/update/:petId', (req, res) => {
+  router.put('/update/:petId', async(req, res) => {
     const { petId } = req.params
-    const petIndex = pets.findIndex(pet => pet.id === parseInt(petId))
+    const existingPet = await prisma.Pet.findUnique({
+        where: { id: petId },
+      });
 
-    if (petIndex !== -1) {
-      const updatedPetInfo = req.body
-      pets[petIndex] = { ...pets[petIndex], ...updatedPetInfo }
-      res.json(pets[petIndex])
-    } else {
-      res.status(404).send('Pet not found')
+    if(!existingPet) {
+        res.status(404).send('Pet not found')
+    }else{
+        const updatedPet = await prisma.book.update({
+            where: { id: parseInt(id) },
+            data: {...pets[petIndex], ...updatedPetInfo
+            }
+          })
+          res.status(201).json(updatedPet)
     }
+
   })
 
-  router.delete('/delete/:petId', (req, res) => {
+  router.delete('/delete/:petId', async(req, res) => {
     const { petId } = req.params
-    const initialLength = pets.length
-    console.log(petId)
-    pets = pets.filter(pets => pets.id !== parseInt(petId))
 
-    if (pets.length < initialLength) {
-      res.status(204).send()
-    } else {
-      res.status(404).send('Contact not found')
+    try {
+        const deletedBook = await prisma.Pet.delete({
+          where: { id: parseInt(petId) }
+        });
+        // If the deletion is successful, return the deleted book
+        res.status(204).send();
+      } catch (error) {
+        // If an error occurs, return a 500 status code with an error message
+        res.status(404).send('Contact not found')
     }
   })
 
